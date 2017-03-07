@@ -1,7 +1,6 @@
 ;helloworld.asm
 ;prints 'Hello World!'
-;author: Joseje Sinohui
-;date: 2017/02/23
+;author: Joseje Sinohui ;date: 2017/02/23
 
 section .data
     msj DB 'Hello World!', 0xA, 0x0                  ;mensaje a imprimir
