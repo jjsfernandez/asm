@@ -13,31 +13,21 @@ section .text
 
 _start:
     mov eax, msg1        ; load first msg
-    call strlen
-    mov edx, eax
-    mov ecx, msg1
-    mov eax, 4
-    mov ebx, 1
-    int 0x80
+	call sprint			 ; call function to print
+    
 
 	mov eax, msg2        ; load second msg
-    call strlen
-    mov edx, eax
-    mov ecx, msg2
-    mov eax, 4
-    mov ebx, 1
-    int 0x80
+   	call sprint
 
-	mov eax, msg3       ; load third msg
-    call strlen
-    mov edx, eax
-    mov ecx, msg3
-    mov eax, 4
-    mov ebx, 1
-    int 0x80
+    mov eax, msg3       ; load third msg
+    call sprint
+   
+	jmp quit	
+	
 
-	mov eax, 1			; exit program
-	int 0x80
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;; function string length (strlen) ;;;
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 strlen:
     push ebx            ;save the value of ebx in the stack
@@ -53,3 +43,34 @@ finish:
     sub eax, ebx        ; substract initial value
     pop ebx             ; brings back ebx 
     ret                 ; return to where the function was called
+
+
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;; function string print (sprint) ;;;
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+sprint:
+	push edx			; save values to stack
+	push ecx
+	push ebx
+	push eax
+	call strlen			; get string length (stored in eax)
+
+	mov edx, eax		; move length to edx
+	pop eax				; restore eax
+	mov ecx, eax		; move eax (message) to ecx
+	mov ebx, 1			; stdout
+	mov eax, 4			; sys_write
+	int 80h				; execute
+
+	pop ebx				; restore other values
+	pop ecx
+	pop edx
+	ret 				; return to where the function was called
+
+
+quit:
+	mov eax, 1			; exit program
+	int 0x80
+
