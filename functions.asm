@@ -7,6 +7,7 @@ stdin			equ 0
 stdout			equ 1
 stderr			equ 3
 
+
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;; function string length (strlen) ;;;
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -26,39 +27,28 @@ finish:
     pop ebx             ; brings back ebx 
     ret                 ; return to where the function was called
  
+
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;; function string print (sprint) ;;;
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
 sprint:
     push edx            ; save values to stack
     push ecx
     push ebx
     push eax
     call strlen         ; get string length (stored in eax)
-
     mov edx, eax        ; move length to edx
     pop eax             ; restore eax
     mov ecx, eax        ; move eax (message) to ecx
     mov ebx, stdout      
     mov eax, sys_write  ; sys_write
     int 80h             ; execute
-
     pop ebx             ; restore other values
     pop ecx
     pop edx
     ret                 ; return to where the function was called
 
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-;;; sequence to exit the program   ;;;
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-quit:
-    mov eax, sys_exit          ; exit program
-    int 0x80
 
-
-
-;; new stuff need to comment
 ;; uses sprint and adds a new line at the end
 sprintLF:
 	call sprint 	
@@ -70,6 +60,7 @@ sprintLF:
  	pop EAX	
  	pop EAX
  	ret 			
+
 
 ;; uses iprint and adds a new line at the end
 iprintLF:
@@ -117,9 +108,11 @@ printloop:
 	pop ecx
 	pop eax
 	ret
-	
 
-;; new function converts ascii to int
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;;function to convert ascii to int;;;
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 atoi:
 	push ebx		; save registers to the stack
 	push ecx
@@ -147,3 +140,21 @@ atoi:
 	mul ebx
 	inc ecx
 	jmp multcycle
+
+	finished:
+	mov ebx, 10			; decimal value 10 to ebx
+	div ebx				; eax/10
+	pop esi				; restore the values
+	pop edx
+	pop ecx
+	pop ebx
+	ret
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;; sequence to exit the program   ;;;
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+quit:
+    mov eax, sys_exit          ; exit program
+    int 0x80
+
+
