@@ -18,4 +18,4 @@ ciclo:
   cmp ecx,0		; Checks if there are no more arguments
   jnz ciclo		; Repeat if not last
 			
-  call quit		
+  jmp quit		

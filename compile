@@ -1,4 +1,4 @@
 FILE="$1"
 name="${FILE%%.*}"
 nasm -f elf -F stabs $1
-ld -m elf_i386 -s -o $name "$name.o"
+ld -m elf_i386 -s -o $name.sh "$name.o"
