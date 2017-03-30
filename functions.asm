@@ -150,6 +150,24 @@ atoi:
 	pop ebx
 	ret
 
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;; farenheit to celsius function  ;;;
+;;; receives farenheit in eax	   ;;;
+;;; C = ((F-32)*5)/9			   ;;;
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+ftoc:
+	sub eax, 32		
+	imul eax, 5
+	push edx			; save to stack
+	mov edx, 0
+	push ebx			; save to stack
+	mov ebx, 9
+	div ebx
+	pop ebx				; restore values
+	pop edx				; restore values
+	ret
+
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;; sequence to exit the program   ;;;
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;

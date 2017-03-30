@@ -1,4 +1,4 @@
-FILE="$1"
-name="${FILE%%.*}"
-nasm -f elf -F stabs $1
-ld -m elf_i386 -s -o $name.sh "$name.o"
+FILE="$1"                                        # gets the argument
+name="${FILE%%.*}"                               # strips the extension
+nasm -f elf -F stabs $1                          # first step of compilation
+ld -m elf_i386 -s -o $name.sh "$name.o"          # second step of compilation
