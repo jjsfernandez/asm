@@ -169,6 +169,28 @@ ftoc:
 	ret
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;; celsius to farenheit function  ;;;
+;;; receives farenheit in eax	   ;;;
+;;; F = (C*9/5) + 32			   ;;;
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+ctof:
+	imul eax, 9
+
+	push ebx			; save to stack
+	push edx
+	mov edx, 0
+	mov ebx, 5
+	div ebx
+
+	add eax, 32		
+
+	pop ebx				; restore values
+	pop edx				; restore values
+
+	ret
+
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;; sequence to exit the program   ;;;
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 quit:

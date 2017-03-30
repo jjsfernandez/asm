@@ -1,5 +1,5 @@
 ; Program: ftoc.asm
-; takes an argument(farenheit and converts it to celcious)
+; takes an argument(farenheit and converts it to celsius)
 ; Author: Jose Jesus Sinohui Fernandez
 ; Date: March 30, 2017
 
