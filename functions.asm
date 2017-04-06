@@ -180,7 +180,7 @@ ctof:
 	push edx
 	mov edx, 0
 	mov ebx, 5
-	div ebx
+   	div ebx
 
 	add eax, 32		
 
@@ -189,10 +189,34 @@ ctof:
 
 	ret
 
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;; Function to print string from array ;;;
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+stringcopy:
+	push ecx			; save and clear registers
+	push ebx
+	mov ebx, 0
+	mov ecx, 0
+	mov ebx, eax
+
+.sigcar:
+	mov bl, byte[eax]
+	mov byte[esi+ecx], bl	; moves a char to esi
+	cmp byte[eax],0  		; checks if it's done
+	jz .finalizar
+	inc eax				; next letter
+	inc ecx				; so it doesn't rewrite a char
+	jmp .sigcar
+
+.finalizar:				; restore values
+	pop ebx
+	pop ecx
+	ret
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;; sequence to exit the program   ;;;
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 quit:
     mov eax, sys_exit          ; exit program
     int 0x80
