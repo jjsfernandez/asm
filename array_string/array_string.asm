@@ -32,7 +32,7 @@ mov esi, array
 
 print:
 	mov eax, esi			
-	call sprintLF		
+	call iprintLF		
 	add esi,10
 	dec ecx
 	cmp ecx, 0
