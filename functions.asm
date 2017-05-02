@@ -6,7 +6,12 @@ sys_write		equ 4
 stdin			equ 0
 stdout			equ 1
 stderr			equ 3
-
+sys_open        equ 5
+sys_close       equ 6
+O_RDONLY        equ 0
+O_RDWR          equ 1
+sys_creat       equ 8
+sys_sync        equ 36
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;; function string length (strlen) ;;;
@@ -192,6 +197,34 @@ ctof:
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;; Function to print string from array ;;;
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+copystring:
+	push ecx			; save and clear registers
+	push ebx
+	mov ebx, 0
+	mov ecx, 0
+	mov ebx, eax
+
+.sigcar:
+	mov bl, byte[eax]
+    cmp bl, 0xA
+    je .salto
+	mov byte[esi+ecx], bl	; moves a char to esi
+	cmp byte[eax],0  		; checks if it's done
+	jz .finalizar
+
+.salto:
+	inc eax				; next letter
+	inc ecx				; so it doesn't rewrite a char
+    jmp .sigcar
+    
+.finalizar:				; restore values
+	pop ebx
+	pop ecx
+	ret
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;; Function to print string from array ;;;
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 stringcopy:
 	push ecx			; save and clear registers
 	push ebx
@@ -213,6 +246,14 @@ stringcopy:
 	pop ecx
 	ret
 
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;; function to read from user ;;;;;;;
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+ReadText:
+    mov eax, sys_read
+    mov ebx, stdin
+    int 0x80
+    ret
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;; sequence to exit the program   ;;;
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
