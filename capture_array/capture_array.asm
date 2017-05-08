@@ -5,7 +5,7 @@
 %include '../functions.asm'
 
 segment .bss
-    buffer_name resb 20
+    buffer_name resb 50
 	len_name equ $-buffer_name
 
 	buffer_option resb 3
@@ -14,10 +14,10 @@ segment .bss
 	buffer_file resb 2048
 	len_file equ $-buffer_file
 
-	name resb 20
+	name resb 50
 	option resb 4
 	file resb 2048
-    array resb 200
+    array resb 2000
 
 section .text
     global _start
@@ -31,70 +31,81 @@ segment .data
 	menu db "~MENU~",0xa, "1.-Capture Student",0xa, "2.-Print",0xa,"3.-Save to file",0xa,"0.-Exit",0xa,"Pick an option",0xa,0x0
 
 _start:
+    mov esi, array                      ; points esi to array
+    push ecx                            ; saves ecx to stack (number of names)
 
-	mov eax, menu 		
-	call sprint
+    display_menu:
+        push esi                        ; saves stack pointer
 
-	mov ecx, buffer_option 	
-	mov edx, len_option
-	call ReadText
+        ;menu stuff
+        mov eax, menu 		            
+        call sprint
 
-	mov eax, buffer_option
-	mov esi, option
-	call stringcopy
+        mov ecx, buffer_option 	
+        mov edx, len_option
+        call ReadText
 
-	mov eax, option
-	call atoi
+        mov eax, buffer_option
+        mov esi, option
+        call stringcopy
 
-	cmp eax, 1
-	je read
+        mov eax, option
+        call atoi
 
-	cmp eax, 2
-	je print
+        cmp eax, 1
+        je read
 
-	cmp eax, 3
-	je save
+        cmp eax, 2
+        je print
 
-    cmp eax, 0
-    je exit
-    
+        cmp eax, 3
+        je save
 
-	jmp invalid
+        cmp eax, 0
+        je exit
+        
+
+        jmp invalid
 
 
 
 read:
-
     mov eax, msg_captureStudent                          
     call sprint                                     
     mov ecx, buffer_name
     mov edx, len_name
     call ReadText                                    ;waits for name input
     mov eax, buffer_name                             ;saves buffer_name to memory in eax
-    mov esi, array
-    add esi, ebx
-    call stringcopy
+    ; name to save is in eax
 
-    add ebx, 10
-    inc ecx
+    pop esi                                          ; restore pointer to array
+    call stringcopy                                  ; copies value in eax to array
+    add esi, 10                                      ; moves pointer in array
+    
+    pop ecx                                          ; number of names saved
+    add ecx, 1
+    push ecx
 
-    jmp _start                                       ;jump to _start to display menu again
+    jmp display_menu                                 ;jump to _start to display menu again
 
 
 print:
+    pop ebx                         ; stack pointer in ebx
+    mov esi, array                  ; intialize esi
+    pop ecx                         ; get number of names saved
+    push ecx                        ; save number of names again
 
-    mov esi, array
-
+    ; print loop
     prloop:
         mov eax, esi			
-        call sprintLF		
+        call sprint
         add esi,10
         dec ecx
         cmp ecx, 0
         jne prloop
 
-    jmp _start
-
+    mov esi, ebx                    ; restore esi original pointer(will be pushed in display_menu)
+    jmp display_menu
 
 save:
 	mov eax, msg_captureFile	;pregunta por nombre de archivo a guardar
@@ -127,9 +138,10 @@ save:
 	jle error				;si es 0 o menos, error al abrir
 
 	
-;write
-	mov ebx, eax 			;file handle a ebx
+;write, need to complete writecycle
+writecycle:
 
+	mov ebx, eax 			;file handle a ebx
 	mov eax, sys_write
 	mov ecx, buffer_name
 	mov edx, len_name
@@ -137,16 +149,18 @@ save:
 	mov eax, sys_sync		;sincroniza discos (forzar escritura)
 	int 0x80 				;sys_sync
 
+    
+
 ;Close file 
 	mov eax,sys_close	;
 	int 0x80 			;
-    jmp _start
+    jmp display_menu
 
 
 invalid:
 	mov eax, msg_invalid
 	call sprintLF
-	jmp _start
+	jmp display_menu
 
 error:
 	mov ebx, eax
