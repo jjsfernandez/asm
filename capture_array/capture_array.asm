@@ -141,6 +141,7 @@ save:
 	jle error				;si es 0 o menos, error al abrir
 
 	
+; write to file
 	mov ebx, eax 			;file handle a ebx
 	mov eax, sys_write
 	mov ecx, array         
@@ -154,6 +155,7 @@ save:
 ;Close file 
 	mov eax,sys_close	;
 	int 0x80 			;
+    pop esi             ; so it doesn't get pushed twice(pushed at beggining of display_menu
     jmp display_menu
 
 
