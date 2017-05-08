@@ -18,6 +18,7 @@ segment .bss
 	option resb 4
 	file resb 2048
     array resb 2000
+    len_array equ $-array
 
 section .text
     global _start
@@ -138,13 +139,10 @@ save:
 	jle error				;si es 0 o menos, error al abrir
 
 	
-;write, need to complete writecycle
-writecycle:
-
 	mov ebx, eax 			;file handle a ebx
 	mov eax, sys_write
-	mov ecx, buffer_name
-	mov edx, len_name
+	mov ecx, array         
+	mov edx, len_array      
 	int 0x80
 	mov eax, sys_sync		;sincroniza discos (forzar escritura)
 	int 0x80 				;sys_sync
@@ -160,6 +158,7 @@ writecycle:
 invalid:
 	mov eax, msg_invalid
 	call sprintLF
+    pop esi             ; so it doesn't push it twice if it's not a valid option
 	jmp display_menu
 
 error:
