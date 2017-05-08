@@ -25,7 +25,7 @@ section .text
 
 segment .data
     msg_captureStudent db "Insert the name of the student>", 0x0
-	msg_printing db "Printing contents from the file...", 0x0
+	msg_printing db "Printing names...", 0x0
 	msg_captureFile db "Insert the path to the file>",0x0 
 	msg_exit db "Goodbye :)", 0x0
 	msg_invalid db "Not valid",0x0
@@ -91,6 +91,8 @@ read:
 
 
 print:
+    mov eax, msg_printing
+    call sprintLF
     pop ebx                         ; stack pointer in ebx
     mov esi, array                  ; intialize esi
     pop ecx                         ; get number of names saved
