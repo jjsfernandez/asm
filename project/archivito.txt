@@ -1,4 +1,2 @@
-Hola
-Mundo
-Joseje
-Sinohui
+Alan Turing
+Grace Hopper
