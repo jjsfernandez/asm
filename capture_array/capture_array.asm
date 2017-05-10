@@ -14,10 +14,9 @@ segment .bss
 	buffer_file resb 2048
 	len_file equ $-buffer_file
 
-	name resb 50
 	option resb 4
 	file resb 2048
-    array resb 2000
+    array resb 300
     len_array equ $-array
 
 section .text
@@ -36,7 +35,7 @@ _start:
     push ecx                            ; saves ecx to stack (number of names)
 
     display_menu:
-        push esi                        ; saves stack pointer
+        push esi                        ; saves array pointer
 
         ;menu stuff
         mov eax, menu 		            
@@ -52,6 +51,8 @@ _start:
 
         mov eax, option
         call atoi
+
+        pop esi                         ; restore stack pointer
 
         cmp eax, 1
         je read
@@ -71,21 +72,32 @@ _start:
 
 
 read:
+
     mov eax, msg_captureStudent                          
     call sprint                                     
+
+    ; saves name in eax
     mov ecx, buffer_name
     mov edx, len_name
     call ReadText                                    ;waits for name input
     mov eax, buffer_name                             ;saves buffer_name to memory in eax
-    ; name to save is in eax
 
-    pop esi                                          ; restore pointer to array
-    call stringcopy                                  ; copies value in eax to array
-    add esi, 10                                      ; moves pointer in array
+
+    ; copies name and moves pointer
+    call stringcopy               
+    add esi, 30                  
     
-    pop ecx                                          ; number of names saved
+    ;update number of names written to array
+    pop ecx                                 
     add ecx, 1
     push ecx
+
+    ; this will clear the buffer
+    mov edi, buffer_name
+ 	mov ecx, 50
+ 	xor eax, eax
+ 	rep stosb
+
 
     jmp display_menu                                 ;jump to _start to display menu again
 
@@ -93,21 +105,21 @@ read:
 print:
     mov eax, msg_printing
     call sprintLF
-    pop ebx                         ; stack pointer in ebx
-    mov esi, array                  ; intialize esi
     pop ecx                         ; get number of names saved
-    push ecx                        ; save number of names again
+    push ecx                        ; save the number of names again
+    push esi                        ; save array pointer
+    mov esi, array                  ; intialize esi
 
     ; print loop
     prloop:
         mov eax, esi			
         call sprint
-        add esi,10
+        add esi, 30
         dec ecx
         cmp ecx, 0
         jne prloop
 
-    mov esi, ebx                    ; restore esi original pointer(will be pushed in display_menu)
+    pop esi                         ; restore array pointer
     jmp display_menu
 
 save:
@@ -155,14 +167,12 @@ save:
 ;Close file 
 	mov eax,sys_close	;
 	int 0x80 			;
-    pop esi             ; so it doesn't get pushed twice(pushed at beggining of display_menu
     jmp display_menu
 
 
 invalid:
 	mov eax, msg_invalid
 	call sprintLF
-    pop esi             ; so it doesn't push it twice if it's not a valid option
 	jmp display_menu
 
 error:
