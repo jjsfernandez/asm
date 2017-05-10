@@ -4,6 +4,9 @@ segment .bss
     name_buffer resb 30
 	name_len equ $-name_buffer
 
+    calificacion_buffer resb 4
+    calificacion_len equ $-calificacion_buffer
+
 	option_buffer resb 3
 	option_len equ $-option_buffer
 
@@ -15,16 +18,18 @@ segment .bss
 	file resb 2048
     array resb 3000
     array_len equ $-array
+    array_calificaciones resb 3000
 
 section .text
     global _start
 
 segment .data
-    palabra db "Que onda morros", 0x0
+    coma db ",", 0x0
     msg_archivo_no_encontrado db "No se encontro el archivo especificado, iniciando con arreglo vacio...", 0x0
     msg_archivo_encontrado db "Archivo encontrado!, Estos son los contenidos del archivo:...",0x0
     msg_capturar_alumno db "Ingresa el nombre del alumno>",0x0
 	msg_mostrar_pantalla db "Estos son los nombres guardados:...", 0x0
+	msg_pregunta_calificacion db "Ingrese la calificacion del alumno>",0x0 
 	msg_guardar_archivo db "Inserte el nombre del archivo>",0x0 
     
 	msg_exit db "Goodbye :)", 0x0
@@ -62,7 +67,7 @@ _start:
     int 0x80
 
 
-    mov ecx, 1
+    mov ecx, 0
     push ecx
     
     mov eax, file_buffer
@@ -131,7 +136,7 @@ capturar_alumno:
 
 
     ; copies name and moves pointer
-    call stringcopy               
+    call copystring               
     add esi, 30                  
     
     ;update number of names written to array
@@ -147,9 +152,53 @@ capturar_alumno:
 
 
     jmp display_menu                                 ;jump to _start to display menu again
+
     
 capturar_calificaciones:
-    ;to do
+    ;mov eax, msg_mostrar_pantalla
+    ;call sprintLF
+
+    pop ecx                         ; get number of names saved
+    push ecx                        ; save the number of names again
+
+    mov esi, array                  
+    mov edx, array_calificaciones
+
+    ; print loop
+    saveloop:
+        mov eax, esi			
+        call sprintLF
+
+        mov eax, msg_pregunta_calificacion
+        call sprint
+
+        push ecx
+        push edx
+
+        mov ecx, calificacion_buffer
+        mov edx, calificacion_len
+        call ReadText                                 
+        mov eax, calificacion_buffer                           
+        call atoi
+
+        pop edx
+
+        mov [edx], eax
+        
+        mov edi, calificacion_buffer
+ 	    mov ecx, 50
+ 	    xor eax, eax
+ 	    rep stosb
+
+        add esi, 30
+        add edx, 4
+
+        pop ecx
+
+        dec ecx
+        cmp ecx, 0
+        jne saveloop
+
     jmp display_menu
 
 mostrar_pantalla:
@@ -158,19 +207,23 @@ mostrar_pantalla:
     call sprintLF
     pop ecx                         ; get number of names saved
     push ecx                        ; save the number of names again
-    push esi                        ; save array pointer
     mov esi, array                  ; intialize esi
+    mov edx, array_calificaciones
 
     ; print loop
     prloop:
         mov eax, esi			
-        call sprintLF
+        call sprint
+        mov eax, coma
+        call sprint
+        mov eax, [edx]
+        call iprintLF
+        add edx, 4
         add esi, 30
         dec ecx
         cmp ecx, 0
         jne prloop
 
-    pop esi                         ; restore array pointer
     jmp display_menu
 
 
@@ -185,7 +238,7 @@ guardar_archivo:
 no_file:
     mov eax, msg_archivo_no_encontrado
     call sprintLF
-    mov ecx, 1
+    mov ecx, 0
     push ecx
     jmp display_menu
 
