@@ -28,6 +28,7 @@ section .text
 
 segment .data
     coma db ",",0x0
+    linefeed db "",0xA,0x0
     msg_archivo_no_encontrado db "No se encontro el archivo especificado, iniciando con arreglo vacio...", 0x0
     msg_archivo_encontrado db "Archivo encontrado!, Estos son los contenidos del archivo:...",0x0
     msg_capturar_alumno db "Ingresa el nombre del alumno>",0x0
@@ -75,15 +76,12 @@ _start:
     
     mov eax, file_buffer    ; copiar el contenido del archivo en eax para copiarlo a archivo(esi)
     call stringcopycount         ; no funciona todavia
-    add esi, 60
-    pop ecx 
-    add ecx, 2
-    push ecx
+
 
     mov eax, msg_archivo_encontrado
     call sprintLF
 
-    jmp mostrar_pantalla
+    jmp display_menu
 
 
 display_menu:
@@ -271,13 +269,13 @@ guardar_archivo:
         mov eax, [edx]
         call itoa
 
-        ; OCUPA UN SALTO DE LINEA
-        ;mov byte [esi], 0xA
-        ;add esi, 1
-
         add esi, 4
         add edx, 4
 
+        mov eax, linefeed
+        call stringcopy
+
+        add esi, 1
 
         ; Resta uno a los nombres
         dec ecx
@@ -362,10 +360,11 @@ stringcopycount:
 	mov ebx, 0
 	mov ecx, 0
 	mov ebx, eax
+    pop edx
 
 .sigcar:
 
-	cmp byte[eax],0  		; checks if it's done
+	cmp byte[eax], 0  		; checks if it's done
 	jz .finalizar
 
 	mov bl, byte[eax]
@@ -380,11 +379,7 @@ stringcopycount:
     jmp .sigcar
 
 .finpalabra:
-	mov byte[esi+ecx], bl	; moves a char to esi (0xA)
-
-    pop edx
-    inc edx
-    push edx
+    add edx, 1
     add esi, 30
 
 	inc eax				; next letter
@@ -392,6 +387,7 @@ stringcopycount:
     jmp .sigcar
     
 .finalizar:				; restore values
+    push edx
 	ret
 
 
