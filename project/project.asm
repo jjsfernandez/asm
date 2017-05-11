@@ -17,8 +17,11 @@ segment .bss
 	option resb 3
 	file resb 2048
     array resb 3000
-    array_len equ $-array
-    array_calificaciones resb 3000
+    array_calificaciones resb 400
+    array_final resb 3400
+    array_final_len equ $-array_final
+
+
 
 section .text
     global _start
@@ -39,12 +42,12 @@ segment .data
 
 _start:
 
-    mov esi, array
+    mov esi, array      ; en esi siempre estara el puntero de array
 
     ;; Checar argumentos y guardar el archivo en el buffer si existe
     pop ecx
     cmp ecx, 2
-    jl no_file                 
+    jl no_file                 ;; el programa empieza aqui, por el momento no funciona recibir archivo de argumento
     pop eax
 
     ; Abrir archivo
@@ -67,11 +70,15 @@ _start:
     int 0x80
 
 
-    mov ecx, 0
-    push ecx
+    mov ecx, 0              ;inicializar un contador para los nombres guardados
+    push ecx                ;guardarlo en el stack
     
-    mov eax, file_buffer
-    call stringcopy
+    mov eax, file_buffer    ; copiar el contenido del archivo en eax para copiarlo a archivo(esi)
+    call stringcopycount         ; no funciona todavia
+    add esi, 60
+    pop ecx 
+    add ecx, 2
+    push ecx
 
     mov eax, msg_archivo_encontrado
     call sprintLF
@@ -82,10 +89,10 @@ _start:
 display_menu:
 
     pop eax
-    call iprintLF
+    call iprintLF       ; imprimir cantidad de nombres actuales (temporal)
     push eax
 
-    push esi ; guardar el puntero
+    push esi ; guardar el puntero del archivo
     
     ; muestra el menu
     mov eax, menu 		            
@@ -102,7 +109,7 @@ display_menu:
     mov eax, option
     call atoi
 
-    pop esi ;restaurar el puntero
+    pop esi ;restaurar el puntero del archivo
 
     cmp eax, 1
     je capturar_alumno
@@ -155,16 +162,13 @@ capturar_alumno:
 
     
 capturar_calificaciones:
-    ;mov eax, msg_mostrar_pantalla
-    ;call sprintLF
 
     pop ecx                         ; get number of names saved
     push ecx                        ; save the number of names again
 
     mov esi, array                  
-    mov edx, array_calificaciones
+    mov edx, array_calificaciones   ; puntero para las calificaciones
 
-    ; print loop
     saveloop:
         mov eax, esi			
         call sprintLF
@@ -172,8 +176,8 @@ capturar_calificaciones:
         mov eax, msg_pregunta_calificacion
         call sprint
 
-        push ecx
-        push edx
+        push ecx    ; guarda cantidad de nombres
+        push edx    ; guarda puntero
 
         mov ecx, calificacion_buffer
         mov edx, calificacion_len
@@ -181,22 +185,25 @@ capturar_calificaciones:
         mov eax, calificacion_buffer                           
         call atoi
 
-        pop edx
+        pop edx     ; restaura puntero
 
-        mov [edx], eax
+        mov [edx], eax  ; mueve el valor al arreglo
         
+        ; limpia el buffer
         mov edi, calificacion_buffer
  	    mov ecx, 50
  	    xor eax, eax
  	    rep stosb
 
+        ; recorre el arreglo
         add esi, 30
         add edx, 4
 
+        ; resta uno a los nombres
         pop ecx
-
         dec ecx
         cmp ecx, 0
+
         jne saveloop
 
     jmp display_menu
@@ -228,13 +235,90 @@ mostrar_pantalla:
 
 
 guardar_archivo:
-    ;to do
+    pop ecx                         ; get number of names saved
+    push ecx                        ; save the number of names again
+    push esi                        ; guardar puntero de array
+
+    mov esi, array_final            ; puntero para conjunto
+    mov edx, array_calificaciones   ; puntero para las calificaciones
+    mov ebx, array                  ; puntero para los nombres
+
+    fillarray:
+        mov eax, ebx		        ; mover valor de nombres a eax
+        call copystring             ; copiarlo a el arreglo final
+                                    ; recorrerlo
+        add esi, 30                 
+        add ebx, 30
+
+        mov eax, coma               ; agregar una coma
+        call copystring
+        add esi, 1
+        add ebx, 1
+
+        ;mov eax, edx
+        ;call itoa
+
+        mov [esi], edx
+
+        add esi, 4
+        add edx, 4
+
+        ; resta uno a los nombres
+        dec ecx
+
+        cmp ecx, 0
+        jne fillarray
+
+
+	mov eax, msg_guardar_archivo	;pregunta por nombre de archivo a guardar
+	call sprint 				;imprime el mensaje
+
+	mov ecx, file_buffer 		;captura en filename
+	mov edx,file_len     		;con una longitud maxima de len_filename
+	call ReadText 				;input desde el teclado
+
+	mov esi, file 		        ;copia hasta archivo
+	mov eax, file_buffer		;desde filename
+	call copystring	 			;pero sin el caracter 0xA
+
+;create file
+	mov eax, sys_creat 			;sys_creat  EQU 8
+	mov ebx, file   			;nombre de archivo 
+	mov ecx, 511 				;511 = 	rwxr-xr-x
+	int 0x80					;ejecuta (llama al sistema op.)
+
+	cmp eax, 0
+	jle error					;si es 0 o menos, error al crear
+
+
+; open file for write
+	mov eax, sys_open		;abrir archivo
+	mov ebx, file	    	;nombre de archivo desde archivo
+	mov ecx, O_RDWR			;abrir en modo de lectura y escritura
+	int 0x80				;ejecutar 
+	cmp eax,0
+	jle error				;si es 0 o menos, error al abrir
+
+	
+; write to file
+	mov ebx, eax 			;file handle a ebx
+	mov eax, sys_write
+	mov ecx, array_final         
+	mov edx, array_final_len      
+	int 0x80
+	mov eax, sys_sync		;sincroniza discos (forzar escritura)
+	int 0x80 				;sys_sync
+
+    
+
+;Close file 
+	mov eax,sys_close	;
+	int 0x80 			;
+
+    pop esi
     jmp display_menu
 
-
-
-
-
+    
 no_file:
     mov eax, msg_archivo_no_encontrado
     call sprintLF
@@ -264,17 +348,24 @@ stringcopycount:
 	mov ebx, eax
 
 .sigcar:
-	mov bl, byte[eax]
-    cmp bl, 0xA
-    je .finpalabra
-	mov byte[esi+ecx], bl	; moves a char to esi
+
 	cmp byte[eax],0  		; checks if it's done
 	jz .finalizar
+
+	mov bl, byte[eax]
+
+    cmp bl, 0xA
+    je .finpalabra
+
+	mov byte[esi+ecx], bl	; moves a char to esi
+
 	inc eax			    	; next letter
 	inc ecx			    	; so it doesn't rewrite a char
     jmp .sigcar
 
 .finpalabra:
+	mov byte[esi+ecx], bl	; moves a char to esi (0xA)
+
     pop edx
     inc edx
     push edx
@@ -286,3 +377,5 @@ stringcopycount:
     
 .finalizar:				; restore values
 	ret
+
+

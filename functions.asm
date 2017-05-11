@@ -156,6 +156,48 @@ atoi:
 	ret
 
 
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;; rceives integer converts it to text;;;
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+itoa:
+	push ebx		; save registers to the stack
+	push ecx
+	push edx
+	push esi
+
+    mov ebx, 10
+    mov ecx, 0
+    push ecx
+    inc ecx
+
+.dividir:
+    inc ecx
+    mov edx, 0
+    idiv ebx
+    push edx
+    cmp eax, 0
+    je .fuera
+    jmp .dividir
+
+.fuera:
+    mov ebx, 0
+
+.guardar:
+    pop eax
+    mov byte[esi+ebx], al
+    inc ebx
+    cmp ebx, ecx
+    jne .guardar
+
+    pop esi
+    pop edx
+    pop ecx
+    pop ebx 
+    ret
+
+
+
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;; farenheit to celsius function  ;;;
 ;;; receives farenheit in eax	   ;;;
