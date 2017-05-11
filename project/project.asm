@@ -27,7 +27,7 @@ section .text
     global _start
 
 segment .data
-    coma db ",", 0x0
+    coma db ",",0x0
     msg_archivo_no_encontrado db "No se encontro el archivo especificado, iniciando con arreglo vacio...", 0x0
     msg_archivo_encontrado db "Archivo encontrado!, Estos son los contenidos del archivo:...",0x0
     msg_capturar_alumno db "Ingresa el nombre del alumno>",0x0
@@ -268,8 +268,12 @@ guardar_archivo:
         call copystring
         add esi, 1
 
-        mov eax, edx
+        mov eax, [edx]
         call itoa
+
+        ; OCUPA UN SALTO DE LINEA
+        ;mov byte [esi], 0xA
+        ;add esi, 1
 
         add esi, 4
         add edx, 4
