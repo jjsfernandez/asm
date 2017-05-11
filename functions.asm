@@ -175,6 +175,7 @@ itoa:
     inc ecx
     mov edx, 0
     idiv ebx
+    add edx,0x30
     push edx
     cmp eax, 0
     je .fuera

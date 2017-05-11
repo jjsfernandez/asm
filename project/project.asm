@@ -131,102 +131,116 @@ display_menu:
 
 
 capturar_alumno:
-
+    
+    ; Imprime mensaje y espera input
     mov eax, msg_capturar_alumno                          
     call sprint                                     
 
-    ; saves name in eax
+    ; Guardar input del usuario en eax
     mov ecx, name_buffer
     mov edx, name_len
-    call ReadText                                    ;waits for name input
-    mov eax, name_buffer                             ;saves buffer_name to memory in eax
+    call ReadText
+    mov eax, name_buffer
 
-
-    ; copies name and moves pointer
+    ; Copia el nombre al arreglo y recorre el arreglo
     call copystring               
     add esi, 30                  
     
-    ;update number of names written to array
+    ; Le agrega uno al contador de nombres
     pop ecx                                 
     add ecx, 1
     push ecx
 
-    ; this will clear the buffer
+    ; Limpia el buffer para proximo input
     mov edi, name_buffer
  	mov ecx, 50
  	xor eax, eax
  	rep stosb
 
 
-    jmp display_menu                                 ;jump to _start to display menu again
+    jmp display_menu                ; vuelve al menu
 
     
 capturar_calificaciones:
 
-    pop ecx                         ; get number of names saved
-    push ecx                        ; save the number of names again
+    pop ecx                         ; Trae del stack el numero de nombres guardados
+    push ecx                        ; Los vuelve a guardar en el stack
 
-    mov esi, array                  
+    mov esi, array                  ; puntero para los nombres
     mov edx, array_calificaciones   ; puntero para las calificaciones
 
     saveloop:
+        
+        push ecx                    ; guarda cantidad de nombres
+        push edx                    ; guarda puntero de calificaciones
+
+        ; Imprime el nombre del alumno
         mov eax, esi			
         call sprintLF
 
+        ; Pregunta por la calificacion
         mov eax, msg_pregunta_calificacion
         call sprint
 
-        push ecx    ; guarda cantidad de nombres
-        push edx    ; guarda puntero
-
+        ; Espera el input y lo convierte a entero
         mov ecx, calificacion_buffer
         mov edx, calificacion_len
         call ReadText                                 
         mov eax, calificacion_buffer                           
         call atoi
 
-        pop edx     ; restaura puntero
-
-        mov [edx], eax  ; mueve el valor al arreglo
+        pop edx                     ; Restaura el puntero de calificaciones
         
-        ; limpia el buffer
+        ; Copia al arreglo de calificaciones y recorre los arreglos
+        mov [edx], eax              
+        add esi, 30
+        add edx, 4
+
+        ; Limpia el buffer
         mov edi, calificacion_buffer
  	    mov ecx, 50
  	    xor eax, eax
  	    rep stosb
 
-        ; recorre el arreglo
-        add esi, 30
-        add edx, 4
-
-        ; resta uno a los nombres
-        pop ecx
+        ; Resta uno a los nombres guardados
+        pop ecx                     ; devuelve ecx del stack
         dec ecx
-        cmp ecx, 0
 
+        cmp ecx, 0
         jne saveloop
 
     jmp display_menu
 
-mostrar_pantalla:
 
+mostrar_pantalla:
+    ;Imprime mensaje
     mov eax, msg_mostrar_pantalla
     call sprintLF
-    pop ecx                         ; get number of names saved
-    push ecx                        ; save the number of names again
-    mov esi, array                  ; intialize esi
-    mov edx, array_calificaciones
 
-    ; print loop
+    pop ecx                         ; Trae del stack el numero de nombres guardados
+    push ecx                        ; Los vuelve a guardar en el stack
+    
+    mov esi, array                  ; puntero para los nombres
+    mov edx, array_calificaciones   ; puntero para las calificaciones
+
     prloop:
+        ; Mueve el nombre del arreglo de los nombres y lo imprime
         mov eax, esi			
         call sprint
+
+        ; Imprime una coma
         mov eax, coma
         call sprint
+        
+        ; Mueve el nombre del arreglo de calificaciones y lo imprime con line feed
         mov eax, [edx]
         call iprintLF
+
+        ; Recorre los arreglos
         add edx, 4
         add esi, 30
+        
+        ; Checa si termino el proceso
         dec ecx
         cmp ecx, 0
         jne prloop
@@ -235,8 +249,8 @@ mostrar_pantalla:
 
 
 guardar_archivo:
-    pop ecx                         ; get number of names saved
-    push ecx                        ; save the number of names again
+    pop ecx                         ; Trae del stack el numero de nombres guardados
+    push ecx                        ; Los vuelve a guardar en el stack
     push esi                        ; guardar puntero de array
 
     mov esi, array_final            ; puntero para conjunto
@@ -253,24 +267,22 @@ guardar_archivo:
         mov eax, coma               ; agregar una coma
         call copystring
         add esi, 1
-        add ebx, 1
 
-        ;mov eax, edx
-        ;call itoa
-
-        mov [esi], edx
+        mov eax, edx
+        call itoa
 
         add esi, 4
         add edx, 4
 
-        ; resta uno a los nombres
+
+        ; Resta uno a los nombres
         dec ecx
 
         cmp ecx, 0
         jne fillarray
 
 
-	mov eax, msg_guardar_archivo	;pregunta por nombre de archivo a guardar
+	mov eax, msg_guardar_archivo;pregunta por nombre de archivo a guardar
 	call sprint 				;imprime el mensaje
 
 	mov ecx, file_buffer 		;captura en filename
@@ -281,7 +293,7 @@ guardar_archivo:
 	mov eax, file_buffer		;desde filename
 	call copystring	 			;pero sin el caracter 0xA
 
-;create file
+    ; Create file
 	mov eax, sys_creat 			;sys_creat  EQU 8
 	mov ebx, file   			;nombre de archivo 
 	mov ecx, 511 				;511 = 	rwxr-xr-x
@@ -291,7 +303,7 @@ guardar_archivo:
 	jle error					;si es 0 o menos, error al crear
 
 
-; open file for write
+    ; Open file for write
 	mov eax, sys_open		;abrir archivo
 	mov ebx, file	    	;nombre de archivo desde archivo
 	mov ecx, O_RDWR			;abrir en modo de lectura y escritura
@@ -300,7 +312,7 @@ guardar_archivo:
 	jle error				;si es 0 o menos, error al abrir
 
 	
-; write to file
+    ; Write to file
 	mov ebx, eax 			;file handle a ebx
 	mov eax, sys_write
 	mov ecx, array_final         
@@ -311,9 +323,9 @@ guardar_archivo:
 
     
 
-;Close file 
-	mov eax,sys_close	;
-	int 0x80 			;
+    ; Close file 
+	mov eax,sys_close	
+	int 0x80 			
 
     pop esi
     jmp display_menu
