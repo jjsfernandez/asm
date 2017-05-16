@@ -3,6 +3,11 @@
 segment .bss
 
     names_saved resb 4
+    maximo      resb 4
+    minimo      resb 4
+    media       resb 4
+    sumatoria   resb 4
+    varianza    resb 4
 
     name_buffer resb 30
 	name_len equ $-name_buffer
@@ -30,29 +35,36 @@ section .text
 
 segment .data
     coma db ",",0x0
+    whitespace db " ", 0x0
     linefeed db "",0xA,0x0
     msg_archivo_no_encontrado db "No se encontro el archivo especificado, iniciando con arreglo vacio...", 0x0
     msg_archivo_encontrado db "Archivo encontrado!, Estos son los contenidos del archivo:...",0x0
-    msg_capturar_alumno db "Ingresa el nombre del alumno>",0x0
+    msg_capturar_alumno db "¿Cual es el nombre del alumno?>",0x0
 	msg_mostrar_pantalla db "Estos son los nombres guardados:...", 0x0
 	msg_pregunta_calificacion db "Ingrese la calificacion del alumno>",0x0 
-	msg_guardar_archivo db "Inserte el nombre del archivo>",0x0 
+	msg_guardar_archivo db "¿Nombre del archivo a guardar?>",0x0 
+
+    msg_maximo db "La maxima calificacion fue de: ", 0x0
+    msg_minimo db "La minima calificacion fue de: ", 0x0
+    msg_varianza db "La varianza de las calificaciones fue de: ", 0x0
+
     
-	msg_exit db "Goodbye :)", 0x0
-	msg_invalid db "Not valid",0x0
+	msg_exit db "Adios!", 0x0
+	msg_invalid db "Opcion invalida",0x0
+    msg_no_alumnos db "No hay alumnos guardados", 0x0
     
 	menu db "       ~MENU~",0xa,"1.- Capturar Alumno",0xa,"2.- Capturar Calificaciones",0xa,"3.- Mostrar alumnos en pantalla",0xa,"4.- Guardar Archivo",0xa,"0.- Salir",0xa,"Opcion>",0x0
 
 _start:
 
-    mov esi, array      ; en esi siempre estara el puntero de array
+    mov esi, array                      ; en esi siempre estara el puntero de array
 
     ;; Checar argumentos y guardar el archivo en el buffer si existe
     pop ecx
     cmp ecx, 2
-    jl no_file                 ;; el programa empieza aqui, por el momento no funciona recibir archivo de argumento
-    pop eax
+    jl no_file                
 
+    pop eax
     ; Abrir archivo
     pop ebx             ;file name
     mov eax, sys_open
@@ -72,12 +84,9 @@ _start:
     mov eax, sys_close
     int 0x80
 
-
-    mov ecx, 0
-    mov [names_saved], ecx
     
     mov eax, file_buffer         ; copiar el contenido del archivo en eax para copiarlo a archivo(esi)
-    call stringcopycount         ; no funciona todavia
+    call stringcopycount
 
     mov eax, msg_archivo_encontrado
     call sprintLF
@@ -89,7 +98,6 @@ display_menu:
 
     mov eax, [names_saved]
     call iprintLF       ; imprimir cantidad de nombres actuales (temporal)
-
     
     ; muestra el menu
     mov eax, menu 		            
@@ -116,13 +124,11 @@ display_menu:
 
     cmp eax, 0
     je exit
-    
 
     jmp invalid
 
 
 capturar_alumno:
-    
     ; Imprime mensaje y espera input
     mov eax, msg_capturar_alumno                          
     call sprint                                     
@@ -152,8 +158,10 @@ capturar_alumno:
 
     
 capturar_calificaciones:
-
+    ; Primero compara para verificar que hay alumnos guardados
     mov ecx, [names_saved]
+    cmp ecx, 0
+    je no_alumnos
 
     mov esi, array                  ; puntero para los nombres
     mov edx, array_calificaciones   ; puntero para las calificaciones
@@ -198,31 +206,56 @@ capturar_calificaciones:
         cmp ecx, 0
         jne saveloop
 
+    
+
     jmp display_menu
 
 
 mostrar_pantalla:
+    ; Primero compara para verificar que hay alumnos guardados
+    mov ecx, [names_saved]
+    cmp ecx, 0
+    je no_alumnos
+
+    ; Limpia registros
+    mov eax, 0
+    mov [sumatoria], eax
+    mov [varianza], eax
+
     ;Imprime mensaje
     mov eax, msg_mostrar_pantalla
     call sprintLF
-
-    mov ecx, [names_saved]
     
     mov esi, array                  ; puntero para los nombres
     mov edx, array_calificaciones   ; puntero para las calificaciones
+
+
+    ; inicializa maximo y minimo en el primero valor
+    mov eax, [array_calificaciones] 
+    mov [maximo], eax
+    mov [minimo], eax
 
     prloop:
         ; Mueve el nombre del arreglo de los nombres y lo imprime
         mov eax, esi			
         call sprint
 
-        ; Imprime una coma
-        mov eax, coma
+        ; Imprime un espacio
+        mov eax, whitespace
         call sprint
         
         ; Mueve el nombre del arreglo de calificaciones y lo imprime con line feed
         mov eax, [edx]
         call iprintLF
+
+        add [sumatoria], eax                ; cuenta de la suma de calificaciones
+
+        comparar:
+            cmp eax, [maximo]   
+            jg mayor
+            
+            cmp eax, [minimo]
+            jl menor
 
         ; Recorre los arreglos
         add edx, 4
@@ -233,11 +266,73 @@ mostrar_pantalla:
         cmp ecx, 0
         jne prloop
 
+
+    ; calcula el promedio
+    mov eax, [sumatoria]            
+    mov ecx, [names_saved]
+    mov edx, 0
+    idiv ecx
+    mov [media], eax
+
+
+    ; cicla en las calificaciones para encontrar la varianza
+    mov edx, array_calificaciones
+
+    varloop:
+        mov eax, [edx]
+
+        sub eax, [media]             
+        imul eax, eax
+        add [varianza], eax
+        
+        add edx, 4
+        dec ecx
+        cmp ecx, 0
+        jne varloop
+    
+    mov eax, [varianza]
+    mov ecx, [names_saved]
+    mov edx, 0
+    idiv ecx
+
+    mov [varianza], eax
+    call iprintLF
+
+    mov eax, msg_maximo
+    call sprint
+    mov eax, [maximo]
+    call iprintLF
+
+    mov eax, msg_minimo
+    call sprint
+    mov eax, [minimo]
+    call iprintLF
+
+    mov eax, msg_varianza
+    call sprint
+    mov eax, [varianza]
+    call iprintLF
+
     jmp display_menu
 
 
+    mayor:
+        mov [maximo], eax
+        jmp comparar
+
+    menor:
+        mov [minimo], eax
+        jmp comparar
+
+
+
+
 guardar_archivo:
+    ; Primero compara para verificar que hay alumnos guardados
     mov ecx, [names_saved]
+    cmp ecx, 0
+    je no_alumnos
+
     push esi                        ; guardar puntero de array
 
     mov esi, array_final            ; puntero para conjunto
@@ -327,6 +422,11 @@ no_file:
     call sprintLF
     jmp display_menu
 
+no_alumnos:
+    mov eax, msg_no_alumnos
+    call sprintLF
+    jmp display_menu
+
 invalid:
 	mov eax, msg_invalid
 	call sprintLF
@@ -347,12 +447,9 @@ stringcopycount:
 	mov ebx, 0
 	mov ecx, 0
 	mov ebx, eax
-    pop edx
+    mov edx, [names_saved]
 
 .sigcar:
-
-	cmp byte[eax], 0  		; checks if it's done
-	jz .finalizar
 
 	mov bl, byte[eax]
 
@@ -360,21 +457,23 @@ stringcopycount:
     je .finpalabra
 
 	mov byte[esi+ecx], bl	; moves a char to esi
+	cmp byte[eax], 0  		; checks if it's done
+	jz .finalizar
 
-	inc eax			    	; next letter
-	inc ecx			    	; so it doesn't rewrite a char
+	inc eax
+	inc ecx
     jmp .sigcar
 
 .finpalabra:
-    add edx, 1
+    inc edx   
     add esi, 30
 
-	inc eax				; next letter
-	inc ecx				; so it doesn't rewrite a char
+	inc eax	
+	inc ecx		
     jmp .sigcar
     
-.finalizar:				; restore values
-    push edx
+.finalizar:
+    mov [names_saved], edx
 	ret
 
 
