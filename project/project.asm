@@ -1,20 +1,22 @@
 %include '../functions.asm'
 
 segment .bss
+
+    names_saved resb 4
+
     name_buffer resb 30
 	name_len equ $-name_buffer
 
     calificacion_buffer resb 4
     calificacion_len equ $-calificacion_buffer
 
-	option_buffer resb 3
+	option_buffer resb 4
 	option_len equ $-option_buffer
 
 	file_buffer resb 2048
 	file_len equ $-file_buffer
 
-    name resb 30
-	option resb 3
+    
 	file resb 2048
     array resb 3000
     array_calificaciones resb 400
@@ -71,12 +73,11 @@ _start:
     int 0x80
 
 
-    mov ecx, 0              ;inicializar un contador para los nombres guardados
-    push ecx                ;guardarlo en el stack
+    mov ecx, 0
+    mov [names_saved], ecx
     
-    mov eax, file_buffer    ; copiar el contenido del archivo en eax para copiarlo a archivo(esi)
+    mov eax, file_buffer         ; copiar el contenido del archivo en eax para copiarlo a archivo(esi)
     call stringcopycount         ; no funciona todavia
-
 
     mov eax, msg_archivo_encontrado
     call sprintLF
@@ -86,11 +87,9 @@ _start:
 
 display_menu:
 
-    pop eax
+    mov eax, [names_saved]
     call iprintLF       ; imprimir cantidad de nombres actuales (temporal)
-    push eax
 
-    push esi ; guardar el puntero del archivo
     
     ; muestra el menu
     mov eax, menu 		            
@@ -101,13 +100,7 @@ display_menu:
     call ReadText
 
     mov eax, option_buffer
-    mov esi, option
-    call stringcopy
-
-    mov eax, option
     call atoi
-
-    pop esi ;restaurar el puntero del archivo
 
     cmp eax, 1
     je capturar_alumno
@@ -145,9 +138,9 @@ capturar_alumno:
     add esi, 30                  
     
     ; Le agrega uno al contador de nombres
-    pop ecx                                 
+    mov ecx, [names_saved]
     add ecx, 1
-    push ecx
+    mov [names_saved], ecx
 
     ; Limpia el buffer para proximo input
     mov edi, name_buffer
@@ -155,14 +148,12 @@ capturar_alumno:
  	xor eax, eax
  	rep stosb
 
-
     jmp display_menu                ; vuelve al menu
 
     
 capturar_calificaciones:
 
-    pop ecx                         ; Trae del stack el numero de nombres guardados
-    push ecx                        ; Los vuelve a guardar en el stack
+    mov ecx, [names_saved]
 
     mov esi, array                  ; puntero para los nombres
     mov edx, array_calificaciones   ; puntero para las calificaciones
@@ -215,8 +206,7 @@ mostrar_pantalla:
     mov eax, msg_mostrar_pantalla
     call sprintLF
 
-    pop ecx                         ; Trae del stack el numero de nombres guardados
-    push ecx                        ; Los vuelve a guardar en el stack
+    mov ecx, [names_saved]
     
     mov esi, array                  ; puntero para los nombres
     mov edx, array_calificaciones   ; puntero para las calificaciones
@@ -247,8 +237,7 @@ mostrar_pantalla:
 
 
 guardar_archivo:
-    pop ecx                         ; Trae del stack el numero de nombres guardados
-    push ecx                        ; Los vuelve a guardar en el stack
+    mov ecx, [names_saved]
     push esi                        ; guardar puntero de array
 
     mov esi, array_final            ; puntero para conjunto
@@ -279,8 +268,8 @@ guardar_archivo:
 
         ; Resta uno a los nombres
         dec ecx
-
         cmp ecx, 0
+
         jne fillarray
 
 
@@ -336,8 +325,6 @@ guardar_archivo:
 no_file:
     mov eax, msg_archivo_no_encontrado
     call sprintLF
-    mov ecx, 0
-    push ecx
     jmp display_menu
 
 invalid:
