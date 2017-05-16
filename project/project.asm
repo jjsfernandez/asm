@@ -1,4 +1,24 @@
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;;                              Project.asm                    19/05/2017;;;
+;;; Carlos                                                                ;;;
+;;; Lorena                                                                ;;;
+;;; Jose                                                                  ;;;
+;;;                                                                       ;;;
+;;; USO                                                                   ;;;
+;;; ./project.sh <nombre del archivo>(opcional)                           ;;;
+;;;                                                                       ;;;
+;;; Usar las opciones del menu que aparecera en pantalla para caputrar    ;;;
+;;; calificaciones de alumnos, mostrarlas junto con varianza, maximo,     ;;;                                                                 
+;;; minimo. tambien incluye la opcion para guardar la lista de alumnos y  ;;; 
+;;; calificaciones en un archivo de texto                                 ;;;
+;;;                                                                       ;;;
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+
 %include '../functions.asm'
+
 
 segment .bss
 
