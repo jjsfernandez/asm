@@ -20,7 +20,6 @@ segment .bss
 
 	file_buffer resb 2048
 	file_len equ $-file_buffer
-
     
 	file resb 2048
     array resb 3000
@@ -29,11 +28,13 @@ segment .bss
     array_final_len equ $-array_final
 
 
-
 section .text
+
     global _start
 
+
 segment .data
+
     coma db ",",0x0
     whitespace db " ", 0x0
     linefeed db "",0xA,0x0
@@ -43,30 +44,27 @@ segment .data
 	msg_mostrar_pantalla db "Estos son los nombres guardados:...", 0x0
 	msg_pregunta_calificacion db "Ingrese la calificacion del alumno>",0x0 
 	msg_guardar_archivo db "¿Nombre del archivo a guardar?>",0x0 
-
     msg_maximo db "La maxima calificacion fue de: ", 0x0
     msg_minimo db "La minima calificacion fue de: ", 0x0
     msg_varianza db "La varianza de las calificaciones fue de: ", 0x0
-
-    
 	msg_exit db "Adios!", 0x0
 	msg_invalid db "Opcion invalida",0x0
     msg_no_alumnos db "No hay alumnos guardados", 0x0
-    
 	menu db "       ~MENU~",0xa,"1.- Capturar Alumno",0xa,"2.- Capturar Calificaciones",0xa,"3.- Mostrar alumnos en pantalla",0xa,"4.- Guardar Archivo",0xa,"0.- Salir",0xa,"Opcion>",0x0
+
 
 _start:
 
-    mov esi, array                      ; en esi siempre estara el puntero de array
+    mov esi, array      ; en esi siempre estara el puntero de array
 
-    ;; Checar argumentos y guardar el archivo en el buffer si existe
+    ; Checar argumentos y guardar el archivo en el buffer si existe
     pop ecx
     cmp ecx, 2
     jl no_file                
 
     pop eax
     ; Abrir archivo
-    pop ebx             ;file name
+    pop ebx     ;nombre del archivo     
     mov eax, sys_open
     mov ecx, O_RDONLY
     int 0x80
@@ -99,7 +97,7 @@ display_menu:
     mov eax, [names_saved]
     call iprintLF       ; imprimir cantidad de nombres actuales (temporal)
     
-    ; muestra el menu
+    ; Muestra el menu
     mov eax, menu 		            
     call sprint
 
@@ -129,6 +127,7 @@ display_menu:
 
 
 capturar_alumno:
+
     ; Imprime mensaje y espera input
     mov eax, msg_capturar_alumno                          
     call sprint                                     
@@ -154,10 +153,11 @@ capturar_alumno:
  	xor eax, eax
  	rep stosb
 
-    jmp display_menu                ; vuelve al menu
+    jmp display_menu              
 
     
 capturar_calificaciones:
+
     ; Primero compara para verificar que hay alumnos guardados
     mov ecx, [names_saved]
     cmp ecx, 0
@@ -166,10 +166,12 @@ capturar_calificaciones:
     mov esi, array                  ; puntero para los nombres
     mov edx, array_calificaciones   ; puntero para las calificaciones
 
+
     saveloop:
         
-        push ecx                    ; guarda cantidad de nombres
-        push edx                    ; guarda puntero de calificaciones
+        ; Guarda en el stack para pedir input del usuario
+        push ecx                    
+        push edx                   
 
         ; Imprime el nombre del alumno
         mov eax, esi			
@@ -186,9 +188,8 @@ capturar_calificaciones:
         mov eax, calificacion_buffer                           
         call atoi
 
-        pop edx                     ; Restaura el puntero de calificaciones
-        
         ; Copia al arreglo de calificaciones y recorre los arreglos
+        pop edx                     
         mov [edx], eax              
         add esi, 30
         add edx, 4
@@ -199,19 +200,18 @@ capturar_calificaciones:
  	    xor eax, eax
  	    rep stosb
 
-        ; Resta uno a los nombres guardados
-        pop ecx                     ; devuelve ecx del stack
+        ; Resta uno a los nombres guardados y checa si finalizo
+        pop ecx                    
         dec ecx
-
         cmp ecx, 0
         jne saveloop
 
-    
 
     jmp display_menu
 
 
 mostrar_pantalla:
+
     ; Primero compara para verificar que hay alumnos guardados
     mov ecx, [names_saved]
     cmp ecx, 0
@@ -222,20 +222,22 @@ mostrar_pantalla:
     mov [sumatoria], eax
     mov [varianza], eax
 
-    ;Imprime mensaje
+    ; Imprime mensaje
     mov eax, msg_mostrar_pantalla
     call sprintLF
     
+    ; Inicializa punteros
     mov esi, array                  ; puntero para los nombres
     mov edx, array_calificaciones   ; puntero para las calificaciones
 
-
-    ; inicializa maximo y minimo en el primero valor
+    ; Inicializa maximo y minimo en el primero valor
     mov eax, [array_calificaciones] 
     mov [maximo], eax
     mov [minimo], eax
 
+
     prloop:
+
         ; Mueve el nombre del arreglo de los nombres y lo imprime
         mov eax, esi			
         call sprint
@@ -248,14 +250,17 @@ mostrar_pantalla:
         mov eax, [edx]
         call iprintLF
 
-        add [sumatoria], eax                ; cuenta de la suma de calificaciones
+        add [sumatoria], eax    ; cuenta de la suma de calificaciones
 
+
+        ; Busca si el valor actual es mayor o menor a los guardados
         comparar:
             cmp eax, [maximo]   
             jg mayor
             
             cmp eax, [minimo]
             jl menor
+
 
         ; Recorre los arreglos
         add edx, 4
@@ -267,7 +272,7 @@ mostrar_pantalla:
         jne prloop
 
 
-    ; calcula el promedio
+    ; Calcula el promedio
     mov eax, [sumatoria]            
     mov ecx, [names_saved]
     mov edx, 0
@@ -275,9 +280,8 @@ mostrar_pantalla:
     mov [media], eax
 
 
-    ; cicla en las calificaciones para encontrar la varianza
+    ; Cicla en las calificaciones para encontrar la varianza
     mov edx, array_calificaciones
-
     varloop:
         mov eax, [edx]
 
@@ -290,14 +294,16 @@ mostrar_pantalla:
         cmp ecx, 0
         jne varloop
     
+
+    ; Calcula la varianza
     mov eax, [varianza]
     mov ecx, [names_saved]
     mov edx, 0
     idiv ecx
-
     mov [varianza], eax
-    call iprintLF
 
+
+    ; Imprime resultados
     mov eax, msg_maximo
     call sprint
     mov eax, [maximo]
@@ -316,18 +322,20 @@ mostrar_pantalla:
     jmp display_menu
 
 
+    ; Cambia el maximo y vuelve al punto de comparacion
     mayor:
         mov [maximo], eax
         jmp comparar
 
+
+    ; Cambia el minimo y vuelve al punto de comparacion
     menor:
         mov [minimo], eax
         jmp comparar
 
 
-
-
 guardar_archivo:
+
     ; Primero compara para verificar que hay alumnos guardados
     mov ecx, [names_saved]
     cmp ecx, 0
@@ -342,24 +350,25 @@ guardar_archivo:
     fillarray:
         mov eax, ebx		        ; mover valor de nombres a eax
         call copystring             ; copiarlo a el arreglo final
-                                    ; recorrerlo
+   
+        ; Recorrer los arreglos
         add esi, 30                 
         add ebx, 30
 
         mov eax, coma               ; agregar una coma
         call copystring
-        add esi, 1
+        add esi, 1                  ; recorrer el arreglo
 
-        mov eax, [edx]
-        call itoa
+        mov eax, [edx]              ; mover valor de calificaciones a eax
+        call itoa                   ; cambiarlo a string y guardarlo en esi(arreglo final)
 
+        ; Recorrer los arreglos
         add esi, 4
         add edx, 4
 
         mov eax, linefeed
         call stringcopy
-
-        add esi, 1
+        add esi, 1                  ; recorrer el arreglo
 
         ; Resta uno a los nombres
         dec ecx
@@ -368,52 +377,48 @@ guardar_archivo:
         jne fillarray
 
 
-	mov eax, msg_guardar_archivo;pregunta por nombre de archivo a guardar
-	call sprint 				;imprime el mensaje
+    ; Guardado del archivo
+	mov eax, msg_guardar_archivo; pregunta por nombre de archivo a guardar
+	call sprint 				; imprime el mensaje
 
-	mov ecx, file_buffer 		;captura en filename
-	mov edx,file_len     		;con una longitud maxima de len_filename
-	call ReadText 				;input desde el teclado
+	mov ecx, file_buffer 		; captura en filename
+	mov edx,file_len     		; con una longitud maxima de len_filename
+	call ReadText 				; input desde el teclado
 
-	mov esi, file 		        ;copia hasta archivo
-	mov eax, file_buffer		;desde filename
-	call copystring	 			;pero sin el caracter 0xA
+	mov esi, file 		        ; copia hasta archivo
+	mov eax, file_buffer		; desde filename
+	call copystring	 			; pero sin el caracter 0xA
 
     ; Create file
-	mov eax, sys_creat 			;sys_creat  EQU 8
-	mov ebx, file   			;nombre de archivo 
-	mov ecx, 511 				;511 = 	rwxr-xr-x
-	int 0x80					;ejecuta (llama al sistema op.)
-
+	mov eax, sys_creat 			; sys_creat  EQU 8
+	mov ebx, file   			; nombre de archivo 
+	mov ecx, 511 				; 511 = 	rwxr-xr-x
+	int 0x80					; ejecuta (llama al sistema op.)
 	cmp eax, 0
-	jle error					;si es 0 o menos, error al crear
-
+	jle error					; si es 0 o menos, error al crear
 
     ; Open file for write
-	mov eax, sys_open		;abrir archivo
-	mov ebx, file	    	;nombre de archivo desde archivo
-	mov ecx, O_RDWR			;abrir en modo de lectura y escritura
-	int 0x80				;ejecutar 
+	mov eax, sys_open           ; abrir archivo
+	mov ebx, file               ; nombre de archivo desde archivo
+	mov ecx, O_RDWR             ; abrir en modo de lectura y escritura
+	int 0x80                    ; ejecutar 
 	cmp eax,0
-	jle error				;si es 0 o menos, error al abrir
+	jle error                   ; si es 0 o menos, error al abrir
 
-	
     ; Write to file
-	mov ebx, eax 			;file handle a ebx
+	mov ebx, eax                ; file handle a ebx
 	mov eax, sys_write
-	mov ecx, array_final         
-	mov edx, array_final_len      
+	mov ecx, array_final             
+	mov edx, array_final_len          
 	int 0x80
-	mov eax, sys_sync		;sincroniza discos (forzar escritura)
-	int 0x80 				;sys_sync
-
-    
+	mov eax, sys_sync           ; sincroniza discos (forzar escritura)
+	int 0x80                    ; sys_sync
 
     ; Close file 
 	mov eax,sys_close	
 	int 0x80 			
 
-    pop esi
+    pop esi                     ; Restaura puntero de nombres
     jmp display_menu
 
     
@@ -422,20 +427,24 @@ no_file:
     call sprintLF
     jmp display_menu
 
+
 no_alumnos:
     mov eax, msg_no_alumnos
     call sprintLF
     jmp display_menu
+
 
 invalid:
 	mov eax, msg_invalid
 	call sprintLF
 	jmp display_menu
 
+
 error:
 	mov ebx, eax
 	mov eax, sys_exit
 	int 0x80
+
 
 exit:
 	mov eax, msg_exit
@@ -443,6 +452,9 @@ exit:
 	jmp quit
 
 
+
+
+; not working
 stringcopycount:
 	mov ebx, 0
 	mov ecx, 0
