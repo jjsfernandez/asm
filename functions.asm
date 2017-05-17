@@ -199,6 +199,28 @@ itoa:
 
 
 
+;; receives value in EDI and calculates it's square root
+isqrt32:
+
+    mov ebx, edi
+    xor eax, eax
+
+    .while:
+    cmp eax, ebx
+    jnb .endwhile
+
+    add ebx, eax
+    shr ebx, 1
+    mov eax, edi
+    xor edx, edx
+    div ebx
+
+    jmp .while
+
+    .endwhile:
+    mov eax, ebx
+    ret
+
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;; farenheit to celsius function  ;;;
 ;;; receives farenheit in eax	   ;;;
@@ -304,5 +326,4 @@ ReadText:
 quit:
     mov eax, sys_exit          ; exit program
     int 0x80
-
 

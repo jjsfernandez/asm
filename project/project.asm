@@ -9,9 +9,9 @@
 ;;; ./project.sh <nombre del archivo>(opcional)                           ;;;
 ;;;                                                                       ;;;
 ;;; Usar las opciones del menu que aparecera en pantalla para caputrar    ;;;
-;;; calificaciones de alumnos, mostrarlas junto con varianza, maximo,     ;;;                                                                 
-;;; minimo. tambien incluye la opcion para guardar la lista de alumnos y  ;;; 
-;;; calificaciones en un archivo de texto                                 ;;;
+;;; calificaciones de alumnos, mostrarlas junto con desviacion estandar,  ;;;                                                                 
+;;; maximo y minimo. tambien incluye la opcion para guardar la lista de   ;;;
+;;; alumnos y calificaciones en un archivo de texto                       ;;;
 ;;;                                                                       ;;;
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -27,7 +27,7 @@ segment .bss
     minimo      resb 4
     media       resb 4
     sumatoria   resb 4
-    varianza    resb 4
+    des_std    resb 4
 
     name_buffer resb 30
 	name_len equ $-name_buffer
@@ -66,7 +66,7 @@ segment .data
 	msg_guardar_archivo db "¿Nombre del archivo a guardar?>",0x0 
     msg_maximo db "La maxima calificacion fue de: ", 0x0
     msg_minimo db "La minima calificacion fue de: ", 0x0
-    msg_varianza db "La varianza de las calificaciones fue de: ", 0x0
+    msg_des_std db "La desviacion estandar de las calificaciones fue de: ", 0x0
 	msg_exit db "Adios!", 0x0
 	msg_invalid db "Opcion invalida",0x0
     msg_no_alumnos db "No hay alumnos guardados", 0x0
@@ -240,7 +240,7 @@ mostrar_pantalla:
     ; Limpia registros
     mov eax, 0
     mov [sumatoria], eax
-    mov [varianza], eax
+    mov [des_std], eax
 
     ; Imprime mensaje
     mov eax, msg_mostrar_pantalla
@@ -300,14 +300,14 @@ mostrar_pantalla:
     mov [media], eax
 
 
-    ; Cicla en las calificaciones para encontrar la varianza
+    ; Cicla en las calificaciones para encontrar la desviacion estandar
     mov edx, array_calificaciones
     varloop:
         mov eax, [edx]
 
         sub eax, [media]             
         imul eax, eax
-        add [varianza], eax
+        add [des_std], eax
         
         add edx, 4
         dec ecx
@@ -315,12 +315,15 @@ mostrar_pantalla:
         jne varloop
     
 
-    ; Calcula la varianza
-    mov eax, [varianza]
+    ; Calcula la desviacion estandar
+    mov eax, [des_std]
     mov ecx, [names_saved]
     mov edx, 0
     idiv ecx
-    mov [varianza], eax
+
+    mov edi, eax
+    call isqrt32
+    mov [des_std], eax
 
 
     ; Imprime resultados
@@ -334,9 +337,9 @@ mostrar_pantalla:
     mov eax, [minimo]
     call iprintLF
 
-    mov eax, msg_varianza
+    mov eax, msg_des_std
     call sprint
-    mov eax, [varianza]
+    mov eax, [des_std]
     call iprintLF
 
     jmp display_menu
@@ -479,7 +482,7 @@ stringcopycount:
 	mov ebx, 0
 	mov ecx, 0
 	mov ebx, eax
-    mov edx, [names_saved]
+    mov edx, 1
 
 .sigcar:
 
@@ -497,7 +500,7 @@ stringcopycount:
     jmp .sigcar
 
 .finpalabra:
-    inc edx   
+    add [names_saved], edx
     add esi, 30
 
 	inc eax	
@@ -505,7 +508,6 @@ stringcopycount:
     jmp .sigcar
     
 .finalizar:
-    mov [names_saved], edx
 	ret
 
 
